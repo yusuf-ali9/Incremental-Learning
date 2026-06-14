@@ -58,9 +58,27 @@ export default function ExtractPanel({
     });
   }
 
+  const inactiveCount = extracts.reduce(
+    (n, ex) => n + ex.items.filter((it) => it.status !== "active").length,
+    0
+  );
+
   return (
     <aside className="panel">
       <h2>Extracts</h2>
+
+      {inactiveCount > 0 && (
+        <button
+          className="reactivate-all"
+          disabled={busy === "reactivate"}
+          onClick={() =>
+            run("reactivate", () => api.reactivateSource(sourceId))
+          }
+          title="Bring suspended / dropped facts back into review"
+        >
+          ↺ Reactivate all ({inactiveCount} inactive)
+        </button>
+      )}
 
       {pending && (
         <div className="pending card">

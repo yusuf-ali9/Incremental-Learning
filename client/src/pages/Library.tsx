@@ -61,20 +61,10 @@ export default function Library() {
           <div className="source-title">{s.title}</div>
           <div className="source-meta">
             <span>{s.extract_count} extracts</span>
-            {s.due_count > 0 && <span className="badge">{s.due_count} due</span>}
+            {s.due_count > 0 && <span className="badge">{s.due_count} to review</span>}
           </div>
         </Link>
         <div className="source-card-actions">
-          <select
-            value={s.topic_id ?? ""}
-            title="Move to topic"
-            onChange={(e) => move(s.id, e.target.value || null)}
-          >
-            <option value="">Ungrouped</option>
-            {topics.map((t) => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
           <button
             className="danger small"
             onClick={async () => {

@@ -124,6 +124,8 @@ export const api = {
     req<{ ok: boolean }>(`/api/sources/${id}`, json({ topic_id }, "PATCH")),
   deleteSource: (id: string) =>
     req<{ ok: boolean }>(`/api/sources/${id}`, { method: "DELETE" }),
+  reactivateSource: (id: string) =>
+    req<{ reactivated: number }>(`/api/sources/${id}/reactivate`, json({})),
   fileUrl: (id: string) => `/api/sources/${id}/file`,
 
   // Topics

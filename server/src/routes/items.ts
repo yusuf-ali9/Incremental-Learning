@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { db } from "../db/db.js";
+import { db } from "../db/index.js";
 import { ai } from "../config.js";
 import { AIError } from "../services/ai/provider.js";
 import { promote } from "../services/progression.js";
@@ -12,17 +12,16 @@ const STATUSES: ItemStatus[] = ["active", "suspended", "archived"];
  * auto-step demo mode uses). Lazily generates the cloze / Socratic question for
  * the stage being entered. Throws AIError if generation fails so the caller can
  * surface a 502 and leave the item where it was.
- *
- * Shared by POST /api/items/:id/promote and the demo branch of grade.
  */
 export async function promoteItem(
   itemId: string,
   now: Date,
   demo: boolean
 ): Promise<KnowledgeItem> {
-  const item = db
-    .prepare("SELECT * FROM knowledge_items WHERE id = ?")
-    .get(itemId) as KnowledgeItem | undefined;
+  const item = (await db.get(
+    "SELECT * FROM knowledge_items WHERE id = ?",
+    itemId
+  )) as KnowledgeItem | undefined;
   if (!item) throw new Error("Item not found");
 
   const result = promote(
@@ -31,7 +30,6 @@ export async function promoteItem(
     { demo }
   );
 
-  // Generate content for the stage we're entering, if we actually advanced.
   let cloze_text = item.cloze_text;
   let cloze_answer = item.cloze_answer;
   let question = item.question;
@@ -46,12 +44,11 @@ export async function promoteItem(
     }
   }
 
-  db.prepare(
+  await db.run(
     `UPDATE knowledge_items
        SET stage = ?, ef = ?, interval_days = ?, repetitions = ?,
            due_date = ?, last_reviewed = ?, cloze_text = ?, cloze_answer = ?, question = ?
-     WHERE id = ?`
-  ).run(
+     WHERE id = ?`,
     result.stage,
     result.ef,
     result.interval_days,
@@ -64,11 +61,10 @@ export async function promoteItem(
     item.id
   );
 
-  return db.prepare("SELECT * FROM knowledge_items WHERE id = ?").get(item.id) as KnowledgeItem;
+  return (await db.get("SELECT * FROM knowledge_items WHERE id = ?", item.id)) as KnowledgeItem;
 }
 
 export async function itemRoutes(app: FastifyInstance) {
-  // Manual "approve this transition" to the next stage.
   app.post<{ Params: { id: string } }>("/api/items/:id/promote", async (req, reply) => {
     try {
       const item = await promoteItem(req.params.id, new Date(), false);
@@ -82,16 +78,16 @@ export async function itemRoutes(app: FastifyInstance) {
     }
   });
 
-  // Drop (archive), keep-as-known (suspend), or reactivate an atom.
   app.patch<{ Params: { id: string }; Body: { status: ItemStatus } }>(
     "/api/items/:id/status",
     async (req, reply) => {
       if (!STATUSES.includes(req.body.status)) {
         return reply.code(400).send({ error: "Invalid status" });
       }
-      const exists = db.prepare("SELECT id FROM knowledge_items WHERE id = ?").get(req.params.id);
+      const exists = await db.get("SELECT id FROM knowledge_items WHERE id = ?", req.params.id);
       if (!exists) return reply.code(404).send({ error: "Item not found" });
-      db.prepare("UPDATE knowledge_items SET status = ? WHERE id = ?").run(
+      await db.run(
+        "UPDATE knowledge_items SET status = ? WHERE id = ?",
         req.body.status,
         req.params.id
       );

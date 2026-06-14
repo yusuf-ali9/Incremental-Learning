@@ -100,7 +100,7 @@ main { padding: 24px; max-width: 1400px; margin: 0 auto; }
   border: 1px solid var(--border); border-radius: 10px; padding: 16px; color: var(--text);
 }
 .source-card:hover { border-color: var(--accent); text-decoration: none; }
-.source-title { font-weight: 600; margin-bottom: 10px; }
+.source-title { font-weight: 600; margin-bottom: 10px; overflow-wrap: anywhere; word-break: break-word; }
 .source-meta { display: flex; gap: 10px; color: var(--muted); font-size: 13px; }
 .source-card .danger.small { position: absolute; top: 10px; right: 10px; opacity: 0; }
 .source-card:hover .danger.small { opacity: 1; }
@@ -208,6 +208,10 @@ main { padding: 24px; max-width: 1400px; margin: 0 auto; }
   gap: 10px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border);
 }
 .stage-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.manage-menu {
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;
+  margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);
+}
 button.ghost { background: transparent; color: var(--muted); }
 button.ghost:hover:not(:disabled) { color: var(--text); }
 .socratic-turn {
@@ -217,6 +221,7 @@ button.ghost:hover:not(:disabled) { color: var(--text); }
 .ai-feedback { margin: 0 0 6px; color: var(--text); }
 
 /* atom curation in the extract panel */
+.reactivate-all { width: 100%; margin-bottom: 12px; border-color: var(--accent); color: var(--accent); }
 .atom-actions { display: flex; gap: 6px; margin-top: 4px; }
 button.tiny { padding: 2px 7px; font-size: 11px; }
 .atom-inactive { opacity: 0.5; }

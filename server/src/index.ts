@@ -5,7 +5,7 @@ import { existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { AI_ENABLED, GROQ_MODEL, PORT } from "./config.js";
-import "./db/db.js"; // applies schema on import
+import { initDb } from "./db/index.js";
 import { sourceRoutes } from "./routes/sources.js";
 import { extractRoutes } from "./routes/extracts.js";
 import { reviewRoutes } from "./routes/review.js";
@@ -13,6 +13,8 @@ import { topicRoutes } from "./routes/topics.js";
 import { itemRoutes } from "./routes/items.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+await initDb(); // choose + initialize the DB backend before serving
 
 const app = Fastify({ logger: { level: "info" } });
 
@@ -45,8 +47,9 @@ if (existsSync(clientDist)) {
 }
 
 try {
-  await app.listen({ port: PORT, host: "127.0.0.1" });
-  app.log.info(`SubMemo server on http://127.0.0.1:${PORT} (AI: ${AI_ENABLED ? "on" : "off"})`);
+  // 0.0.0.0 so the server is reachable on Render (and still fine locally).
+  await app.listen({ port: PORT, host: "0.0.0.0" });
+  app.log.info(`SubMemo server on port ${PORT} (AI: ${AI_ENABLED ? "on" : "off"})`);
 } catch (err) {
   app.log.error(err);
   process.exit(1);

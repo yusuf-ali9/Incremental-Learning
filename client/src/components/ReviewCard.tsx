@@ -34,6 +34,7 @@ export default function ReviewCard({ item, demo, onGraded, onNext }: Props) {
   const [answer, setAnswer] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [working, setWorking] = useState(false);
+  const [showManage, setShowManage] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const currentQuestion = turns.length ? turns[turns.length - 1].followUp : item.question;
@@ -71,7 +72,10 @@ export default function ReviewCard({ item, demo, onGraded, onNext }: Props) {
     }
   }
 
-  async function changeStatus(status: ItemStatus) {
+  async function changeStatus(status: ItemStatus, confirmText: string) {
+    if (!confirm(`${confirmText}\n\nYou can bring it back later via "Reactivate" in the article's extract panel.`)) {
+      return;
+    }
     setWorking(true);
     try {
       await api.setItemStatus(item.id, status);
@@ -164,7 +168,7 @@ export default function ReviewCard({ item, demo, onGraded, onNext }: Props) {
         </>
       )}
 
-      {/* Skip + (normal mode) stage controls */}
+      {/* Primary: Skip + Promote. Removal actions live behind "Manage". */}
       <div className="card-controls">
         <button className="ghost" disabled={working} onClick={onNext}>Skip →</button>
         {!demo && (
@@ -174,15 +178,35 @@ export default function ReviewCard({ item, demo, onGraded, onNext }: Props) {
                 Promote to {next}
               </button>
             )}
-            <button disabled={working} onClick={() => changeStatus("suspended")} title="Keep as a known fact; stop scheduling">
-              Keep as known
-            </button>
-            <button className="danger" disabled={working} onClick={() => changeStatus("archived")} title="Drop from review">
-              Drop
+            <button
+              className="ghost"
+              disabled={working}
+              onClick={() => setShowManage((v) => !v)}
+              title="Stop reviewing / remove this fact"
+            >
+              ⋯ Manage
             </button>
           </div>
         )}
       </div>
+
+      {!demo && showManage && (
+        <div className="manage-menu">
+          <button
+            disabled={working}
+            onClick={() => changeStatus("suspended", "Mark this fact as mastered and stop reviewing it?")}
+          >
+            Mark mastered — stop reviewing
+          </button>
+          <button
+            className="danger"
+            disabled={working}
+            onClick={() => changeStatus("archived", "Remove this fact from review entirely?")}
+          >
+            Remove from review
+          </button>
+        </div>
+      )}
 
       {error && <div className="error">{error}</div>}
     </div>

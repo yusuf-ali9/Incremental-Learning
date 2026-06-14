@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS sources (
   type        TEXT NOT NULL CHECK (type IN ('pdf', 'web')),
   title       TEXT NOT NULL,
   file_path   TEXT,
+  pdf_data    {{BYTES}},
   topic_id    TEXT REFERENCES topics(id) ON DELETE SET NULL,
   created_at  TEXT NOT NULL
 );
