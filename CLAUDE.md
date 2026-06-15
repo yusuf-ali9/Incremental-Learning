@@ -28,16 +28,34 @@ npm run dev                  # server on :5174, Vite client on :5173 (open this)
 - `npm run build` — builds client into `client/dist`; `npm start` then serves the
   built UI + API from the server alone on :5174 (single origin).
 
+## Persistence & deploy (1.2)
+
+- **Dual DB driver, chosen at boot by `DATABASE_URL`.** Set ⇒ Postgres (`pg`);
+  unset ⇒ local `node:sqlite` file (`data/submemo.sqlite`). Same schema, same SQL.
+- **PDF bytes live in the DB** (`sources.pdf_data`, BLOB/BYTEA), not on disk, so
+  data survives Render's ephemeral filesystem. Old rows with a `file_path` still
+  serve via a disk fallback in `routes/sources.ts`.
+- Deploys to **Render** as one Web Service + one Postgres via `render.yaml`; see
+  `DEPLOY.md`. Server binds `0.0.0.0`, reads `PORT` from env. `/api/health`
+  reports the live `db` engine.
+- `config.ts` loads dotenv with **`override:true`** so editing `server/.env`
+  replaces a stale system `GROQ_API_KEY` (on Render there's no `.env`, so the
+  dashboard vars are used as-is).
+
 ## Critical environment facts (don't relearn these the hard way)
 
 - **Node 24, Windows, no Visual Studio.** Native addons that compile (e.g.
   `better-sqlite3`) **fail** — there is no C++ toolchain. We use the **built-in
-  `node:sqlite`** (`DatabaseSync`) instead. Do **not** reintroduce `better-sqlite3`
-  or other node-gyp deps.
-- `node:sqlite` has no `.transaction()` helper or `.pragma()`. `server/src/db/db.ts`
-  wraps it into a tiny `{ prepare, exec, transaction }` adapter that reads like
-  better-sqlite3. PRAGMAs are applied in `db.ts`, not in `schema.sql`.
-- `node:sqlite` rows are `null`-prototype objects; call sites cast with `as Type`.
+  `node:sqlite`** (`DatabaseSync`) locally and **`pg`** (pure JS) for Postgres. Do
+  **not** reintroduce `better-sqlite3` or other node-gyp deps.
+- **The DB layer is async** (`{ get, all, run, exec, transaction, engine }`,
+  Promises). `node:sqlite` is sync, wrapped in resolved promises; `pg` is natively
+  async. Routes `await` every DB call. Transactions take a callback that receives a
+  `tx` querier (`db.transaction(async (tx) => …)`) — use `tx`, not `db`, inside.
+- SQL is written with `?` placeholders; the Postgres backend rewrites them to
+  `$1..$n`. Keep SQL portable (TEXT/INTEGER/REAL, `substr`, `CREATE … IF NOT
+  EXISTS`). The one engine-specific bit is the `{{BYTES}}` token in `schema.sql`.
+- Rows from both engines are plain objects with snake_case keys; cast with `as Type`.
 - The PowerShell tool wraps native-command **stderr as red "NativeCommandError"
   text even on success** — check the actual exit code / real output, not the red.
 
@@ -46,9 +64,11 @@ npm run dev                  # server on :5174, Vite client on :5173 (open this)
 ```
 server/src/
   index.ts              Fastify bootstrap; registers routes; serves client/dist in prod
-  config.ts             env (GROQ_API_KEY, GROQ_MODEL, PORT) + picks the AIProvider
+  config.ts             env (GROQ_API_KEY, GROQ_MODEL, PORT, DATABASE_URL) + AIProvider
   types.ts              shared domain types + STAGE_ORDER
-  db/{schema.sql,db.ts} schema + node:sqlite adapter (DATA_DIR, UPLOADS_DIR)
+  db/                   async DB layer: index.ts (picks backend + facade),
+                        sqlite.ts, postgres.ts, migrate.ts, sql.ts, schema.sql,
+                        types.ts; db.ts is a back-compat shim re-exporting index
   services/
     scheduler.ts        SM-2 — pure `sm2(state, grade)` + `scheduler` (Scheduler iface)
     progression.ts      pure `reviewSameStage(state,grade,now)` + `promote(state,now,{demo})`
@@ -101,7 +121,11 @@ data/                   gitignored: submemo.sqlite (+ WAL) and uploads/<id>.pdf
 - `POST /api/review/:id/grade {grade, demo}` — normal: `reviewSameStage`; demo:
   `promoteItem`. Writes a `reviews` row, returns the updated item.
 - `POST /api/items/:id/promote` — manual stage advance (+ lazy gen).
-- `PATCH /api/items/:id/status {status}` — drop / keep-as-known / reactivate.
+- `PATCH /api/items/:id/status {status}` — drop / keep-as-known / reactivate. In
+  the Review UI these (`Mark mastered`=suspend, `Remove`=archive) live behind a
+  **"⋯ Manage"** menu with confirms, so they aren't fat-fingered (they were the
+  1.1 review bug). `POST /api/sources/:id/reactivate` bulk-restores a source's
+  suspended/archived atoms (the ExtractPanel "Reactivate all" button).
 - `PATCH /api/sources/:id {topic_id}` — assign/move/un-group a source.
 - `DELETE /api/topics/:id` — sources fall back to ungrouped (ON DELETE SET NULL).
 - `GET /api/calendar?year=&month=` → `{days:{'YYYY-MM-DD':count}, overdue}`;
@@ -110,10 +134,11 @@ data/                   gitignored: submemo.sqlite (+ WAL) and uploads/<id>.pdf
 
 ## Schema migrations
 `schema.sql` is CREATE-IF-NOT-EXISTS only, so new **columns** on existing tables
-are added by `migrate()` in `db.ts` via guarded `ALTER TABLE` (checks
-`PRAGMA table_info`). Indexes on 1.1 columns are created **after** `migrate()`,
-not in `schema.sql` (else they fail on an upgraded DB before the column exists).
-Add future column changes the same way.
+are added by `migrate()` in `db/migrate.ts` via guarded `ALTER TABLE`. Column
+existence is checked per engine (`PRAGMA table_info` for SQLite,
+`information_schema.columns` for Postgres). Indexes on added columns are created
+**after** the columns exist (in `migrate()`), not in `schema.sql`. Add future
+column changes the same way; keep the DDL portable across both engines.
 
 ## AI
 

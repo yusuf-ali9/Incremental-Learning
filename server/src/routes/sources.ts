@@ -9,7 +9,7 @@ export async function sourceRoutes(app: FastifyInstance) {
   // Library list, with extract + active-due counts for badges.
   app.get("/api/sources", async () => {
     const now = new Date().toISOString();
-    return db.all(
+    const rows = await db.all(
       `SELECT s.id, s.type, s.title, s.topic_id, s.created_at,
         (SELECT COUNT(*) FROM extracts e WHERE e.source_id = s.id) AS extract_count,
         (SELECT COUNT(*) FROM knowledge_items k
@@ -19,6 +19,13 @@ export async function sourceRoutes(app: FastifyInstance) {
        FROM sources s ORDER BY s.created_at DESC`,
       now
     );
+    // Postgres returns COUNT(*) (bigint) as a string — coerce so the client can
+    // do arithmetic (e.g. the nav badge sums due_count).
+    return rows.map((r) => ({
+      ...r,
+      extract_count: Number(r.extract_count),
+      due_count: Number(r.due_count),
+    }));
   });
 
   app.get<{ Params: { id: string } }>("/api/sources/:id", async (req, reply) => {

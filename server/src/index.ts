@@ -5,7 +5,7 @@ import { existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { AI_ENABLED, GROQ_MODEL, PORT } from "./config.js";
-import { initDb } from "./db/index.js";
+import { initDb, db } from "./db/index.js";
 import { sourceRoutes } from "./routes/sources.js";
 import { extractRoutes } from "./routes/extracts.js";
 import { reviewRoutes } from "./routes/review.js";
@@ -26,6 +26,7 @@ app.get("/api/health", async () => ({
   ok: true,
   ai_enabled: AI_ENABLED,
   model: GROQ_MODEL,
+  db: db.engine,
 }));
 
 await app.register(sourceRoutes);
