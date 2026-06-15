@@ -116,6 +116,11 @@ export default function ExtractPanel({
               />
               Understood
             </label>
+            {ex.items.length > 0 && ex.understood !== 1 && (
+              <p className="muted small gate-hint">
+                Tick “Understood” — atoms stay out of review until then (even in demo).
+              </p>
+            )}
 
             <div className="row">
               <button
@@ -139,23 +144,21 @@ export default function ExtractPanel({
                   <li key={it.id} className={it.status !== "active" ? "atom-inactive" : ""}>
                     <span className={`stage stage-${it.stage}`}>{STAGE_LABEL[it.stage]}</span>
                     {it.status === "suspended" && <span className="stage stage-known">known</span>}
-                    {it.status === "archived" && <span className="stage stage-archived">dropped</span>}{" "}
+                    {it.status === "archived" && <span className="stage stage-archived">not in review</span>}{" "}
                     {it.content}
                     <div className="atom-actions">
-                      {it.status === "active" ? (
-                        <>
-                          <button className="tiny" onClick={() => run("k" + it.id, () => api.setItemStatus(it.id, "suspended"))}>
-                            Keep as known
-                          </button>
-                          <button className="tiny danger" onClick={() => run("x" + it.id, () => api.setItemStatus(it.id, "archived"))}>
-                            Drop
-                          </button>
-                        </>
-                      ) : (
-                        <button className="tiny" onClick={() => run("r" + it.id, () => api.setItemStatus(it.id, "active"))}>
-                          Restore
-                        </button>
-                      )}
+                      <label className="check tiny-check" title="Tick to keep this fact in your review rotation; untick to remove it">
+                        <input
+                          type="checkbox"
+                          checked={it.status === "active"}
+                          onChange={(e) =>
+                            run("s" + it.id, () =>
+                              api.setItemStatus(it.id, e.target.checked ? "active" : "archived")
+                            )
+                          }
+                        />
+                        In review
+                      </label>
                     </div>
                   </li>
                 ))}

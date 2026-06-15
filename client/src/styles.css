@@ -223,6 +223,9 @@ button.ghost:hover:not(:disabled) { color: var(--text); }
 /* atom curation in the extract panel */
 .reactivate-all { width: 100%; margin-bottom: 12px; border-color: var(--accent); color: var(--accent); }
 .atom-actions { display: flex; gap: 6px; margin-top: 4px; }
+.tiny-check { font-size: 12px; display: inline-flex; align-items: center; gap: 5px; color: var(--muted); cursor: pointer; }
+.tiny-check input { margin: 0; }
+.gate-hint { color: var(--yellow); margin: 4px 0 0; }
 button.tiny { padding: 2px 7px; font-size: 11px; }
 .atom-inactive { opacity: 0.5; }
 .stage-known { background: rgba(139,147,167,0.2); color: var(--muted); }
