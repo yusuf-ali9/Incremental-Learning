@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { api, type Extract } from "../api.js";
 import PdfViewer, { type SelectionRect } from "../components/PdfViewer.js";
 import ExtractPanel from "../components/ExtractPanel.js";
+import ManualExtractInput from "../components/ManualExtractInput.js";
 
 interface Pending {
   text: string;
@@ -54,6 +55,7 @@ export default function Reader() {
           <Link to="/" className="back">← Library</Link>
           <h1>{title}</h1>
         </div>
+        <ManualExtractInput sourceId={id} onAdded={refresh} />
         <PdfViewer
           fileUrl={api.fileUrl(id)}
           highlights={highlights}

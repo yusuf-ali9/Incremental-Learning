@@ -109,6 +109,14 @@ main { padding: 24px; max-width: 1400px; margin: 0 auto; }
 .reader { display: grid; grid-template-columns: 1fr 380px; gap: 20px; align-items: start; }
 .reader-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 12px; }
 .reader-head h1 { font-size: 18px; margin: 0; }
+.manual-extract {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 9px; padding: 12px; margin-bottom: 12px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.manual-extract-input {
+  width: 100%; box-sizing: border-box; min-height: 64px; resize: vertical;
+}
 .pdf-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
 .pdf-canvas-wrap {
   background: #333; border-radius: 8px; padding: 12px; overflow: auto; max-height: calc(100vh - 180px);
