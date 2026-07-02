@@ -1,6 +1,6 @@
 # SubMemo 1.0
 
-A local, PDF-first, SuperMemo-inspired incremental reading app.
+An AI app to super-charge learning, using SuperMemo inspired incremental reading.
 
 ## What it does
 
